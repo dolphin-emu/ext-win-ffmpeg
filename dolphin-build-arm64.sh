@@ -18,11 +18,23 @@ if [[ -d $PREFIX ]]; then
     rm -rf $PREFIX
 fi
 
-./configure --extra-cflags='-MD -GS-' \
+TOOLCHAIN=""
+EXTRA_CFLAGS=""
+
+if command -v cl.exe >/dev/null 2>&1; then
+    TOOLCHAIN="msvc"
+    EXTRA_CFLAGS="-MD -GS-"
+else
+    TOOLCHAIN=""
+    EXTRA_CFLAGS=""
+fi
+
+./configure \
+    --extra-cflags=$EXTRA_CFLAGS \
     --enable-gpl \
     --enable-version3 \
     --prefix=$PREFIX \
-    --toolchain=msvc \
+    --toolchain=$TOOLCHAIN \
     --target-os=win64 \
     --arch=arm64 \
     --disable-asm \
@@ -54,7 +66,9 @@ make install
 rm -rf $PREFIX/share
 rm -rf $PREFIX/lib/pkgconfig
 
-pushd $PREFIX/lib > /dev/null
-for f in lib*\.a; do
-    mv $f $(echo "$f" | sed -E 's/^lib(.*).a$/\1.lib/')
-done
+if [ "$TOOLCHAIN" = "msvc" ]; then
+    pushd $PREFIX/lib > /dev/null
+    for f in lib*\.a; do
+        mv $f $(echo "$f" | sed -E 's/^lib(.*).a$/\1.lib/')
+    done
+fi
